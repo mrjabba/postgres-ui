@@ -1,0 +1,39 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+ext {
+    groovyMinorVersion = "2.4"
+    spockVersion = "1.1-groovy-${groovyMinorVersion}"
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'groovy'
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    compile "org.projectlombok:lombok:1.16.14"
+    compile "commons-lang:commons-lang:2.6"
+    compile "org.codehaus.groovy:groovy-all:2.4.4"
+    compile "postgresql:postgresql:9.1-901-1.jdbc4"
+
+    testCompile "org.projectlombok:lombok:1.16.14"
+    testCompile("org.spockframework:spock-core:${spockVersion}") {
+        exclude group: "org.codehaus.groovy"
+    }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+jar {
+    baseName = 'postgres-ui'
+    version =  '0.1.0'
+}
