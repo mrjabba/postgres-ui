@@ -98,8 +98,8 @@ public class Client extends Application {
         VBox vBox = new VBox();
         TextArea textArea = new TextArea("enter sql here");
 
-        textArea.setOnKeyPressed(event -> {
-            if(event.getCode() == KeyCode.ENTER) {
+        textArea.setOnKeyReleased(event -> {
+            if(event.getCode() == KeyCode.ENTER && event.isMetaDown()) {
                 executeQuery(textArea.getText());
             }
         });
