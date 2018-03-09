@@ -12,6 +12,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -26,10 +27,12 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Properties;
 
 public class Client extends Application {
     private final Properties properties = new Properties();
+    private TableView resultsBox;
 
     public static void main(String[] args) throws Exception {
         launch(args);
@@ -43,7 +46,7 @@ public class Client extends Application {
         Pane objectsBox = addObjectsBox();
         Pane connectionsBox = addConnectionsBox();
         Pane queryBox = addQueryBox();
-        TableView resultsBox = addResultsBox();
+        resultsBox = addResultsBox();
 
         VBox leftSide = new VBox(10, objectsBox, connectionsBox);
         leftSide.setAlignment(Pos.TOP_LEFT);
@@ -58,8 +61,6 @@ public class Client extends Application {
         primaryStage.setTitle(properties.get("application.name").toString());
         primaryStage.setScene(scene);
         primaryStage.show();
-
-        runAQuery(properties.get("connectionUrl"), "SELECT * from table1");
     }
 
     public Pane addObjectsBox() {
@@ -97,15 +98,17 @@ public class Client extends Application {
         VBox vBox = new VBox();
         TextArea textArea = new TextArea("enter sql here");
 
+        textArea.setOnKeyPressed(event -> {
+            if(event.getCode() == KeyCode.ENTER) {
+                executeQuery(textArea.getText());
+            }
+        });
+
         Button executeButton = new Button("Execute");
         executeButton.setPrefSize(100, 20);
 
         executeButton.setOnAction(event -> {
-            try {
-                runAQuery(properties.get("connectionUrl"), textArea.getText());
-            } catch (Exception e) {
-                throw new RuntimeException("ruh roh", e);
-            }
+            executeQuery(textArea.getText());
         });
 
         vBox.getChildren().addAll(textArea, executeButton);
@@ -138,9 +141,18 @@ public class Client extends Application {
         return table;
     }
 
-    private void runAQuery(Object url, String sql) throws Exception {
+    private void executeQuery(String value) {
+        try {
+            connectAndExecuteQuery(properties.get("connectionUrl"), value);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void connectAndExecuteQuery(Object url, String sql) throws Exception {
         Connection connection = DriverManager.getConnection(url.toString());
 
+        ArrayList<Result> results = new ArrayList<>();
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(sql);
         ResultSetMetaData metaData = resultSet.getMetaData();
@@ -148,14 +160,21 @@ public class Client extends Application {
             String columnName = metaData.getColumnName(i);
             System.out.println("col name=" + columnName);
         }
-        // FIXME wrap this results into the table view result -> init columns here
 
         while(resultSet.next()) {
-            int id = resultSet.getInt(1);
-            String name = resultSet.getString(2);
-            System.out.println(">>> id=" + id + " name=" + name);
+            results.add(Result.builder()
+                    .col1(getColumn(resultSet, 1))
+                    .col2(getColumn(resultSet, 2))
+                    .col3(getColumn(resultSet, 3))
+                    .build());
         }
-        connection.close();
 
+        ObservableList<Result> resultsData = FXCollections.observableArrayList(results);
+        resultsBox.setItems(resultsData);
+        connection.close();
+    }
+
+    private Object getColumn(ResultSet resultSet, int index) throws Exception {
+        return resultSet.getObject(index);
     }
 }

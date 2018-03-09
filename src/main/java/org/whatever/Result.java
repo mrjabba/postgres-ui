@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @Builder
 public class Result {
-    private String col1;
-    private String col2;
-    private String col3;
+    private Object col1;
+    private Object col2;
+    private Object col3;
 }
